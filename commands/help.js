@@ -1,43 +1,162 @@
-const { MessageEmbed } = require('discord.js')
+const { MessageEmbed } = require("discord.js");
 
 module.exports = {
-    info: {
-        name: "help",
-        description: "To show all commands",
-        usage: "[command]",
-        aliases: ["commands", "help me", "pls help"]
-    },
+  name: "help",
+  description: "Information about the bot",
+  usage: "[command]",
+  permissions: {
+    channel: ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"],
+    member: [],
+  },
+  aliases: ["command", "commands", "cmd"],
+  /**
+   *
+   * @param {import("../structures/DiscordMusicBot")} client
+   * @param {import("discord.js").Message} message
+   * @param {string[]} args
+   * @param {*} param3
+   */
+   run: async (client, message, args, { GuildDB }) => {
+    let Commands = client.commands.map(
+      (cmd) =>
+        `\`${GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix}${
+          cmd.name
+        }${cmd.usage ? " " + cmd.usage : ""}\` - ${cmd.description}`
+    );
 
-    run: async function(client, message, args){
-        var allcmds = "";
+    let Embed = new MessageEmbed()
+            .setAuthor(
+              `Commands of ${client.user.username}`,
+              client.botconfig.IconURL
+            )
+            .setColor(client.botconfig.EmbedColor)
+            .setFooter(
+              `To get info of each command type ${
+                GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix
+              }help [Command] | Have a nice day!`
+            ).setDescription(`${Commands.join("\n")}
+  
+  Discord Music Bot Version: v${require("../package.json").version}
+  [✨ Support Server](${
+    client.botconfig.SupportServer
+  }) | [GitHub](https://github.com/SudhanPlayz/Discord-MusicBot) | By [SudhanPlayz](https://github.com/SudhanPlayz)`);
+    if (!args[0]) message.channel.send(Embed);
+    else {
+      let cmd =
+        client.commands.get(args[0]) ||
+        client.commands.find((x) => x.aliases && x.aliases.includes(args[0]));
+      if (!cmd)
+        return client.sendTime(message.channel, `❌ | Unable to find that command.`);
 
-        client.commands.forEach(cmd => {
-            let cmdinfo = cmd.info
-            allcmds+="`"+client.config.prefix+cmdinfo.name+" "+cmdinfo.usage+"` ~ "+cmdinfo.description+"\n"
-        })
+      let embed = new MessageEmbed()
+        .setAuthor(`Command: ${cmd.name}`, client.botconfig.IconURL)
+        .setDescription(cmd.description)
+        .setColor("GREEN")
+        //.addField("Name", cmd.name, true)
+        .addField("Aliases", `\`${cmd.aliases.join(", ")}\``, true)
+        .addField(
+          "Usage",
+          `\`${GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix}${
+            cmd.name
+          }${cmd.usage ? " " + cmd.usage : ""}\``,
+          true
+        )
+        .addField(
+          "Permissions",
+          "Member: " +
+            cmd.permissions.member.join(", ") +
+            "\nBot: " +
+            cmd.permissions.channel.join(", "),
+          true
+        )
+        .setFooter(
+          `Prefix - ${
+            GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix
+          }`
+        );
 
-        let embed = new MessageEmbed()
-        .setAuthor("Commands of "+client.user.username, "https://raw.githubusercontent.com/SudhanPlayz/Discord-MusicBot/master/assets/Music.gif")
-        .setColor("BLUE")
-        .setDescription(allcmds)
-        .setFooter(`To get info of each command you can do ${client.config.prefix}help [command] | By ItzCutePikachu#5949`)
-
-        if(!args[0])return message.channel.send(embed)
-        else {
-            let cmd = args[0]
-            let command = client.commands.get(cmd)
-            if(!command)command = client.commands.find(x => x.info.aliases.includes(cmd))
-            if(!command)return message.channel.send("Unknown Command")
-            let commandinfo = new MessageEmbed()
-            .setTitle("Command: "+command.info.name+" info")
-            .setColor("YELLOW")
-            .setDescription(`
-Name: ${command.info.name}
-Description: ${command.info.description}
-Usage: \`\`${client.config.prefix}${command.info.name} ${command.info.usage}\`\`
-Aliases: ${command.info.aliases.join(", ")}
-`)
-            message.channel.send(commandinfo)
-        }
+      message.channel.send(embed);
     }
-}
+  },
+
+SlashCommand: {
+    options: [
+      {
+        name: "command",
+        description: "Get information on a specific command",
+        value: "command",
+        type: 3,
+        required: false
+      },
+    ],
+    /**
+   *
+   * @param {import("../structures/DiscordMusicBot")} client
+   * @param {import("discord.js").Message} message
+   * @param {string[]} args
+   * @param {*} param3
+   */
+
+    run: async (client, interaction, args, { GuildDB }) => {
+      let Commands = client.commands.map(
+        (cmd) =>
+          `\`${GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix}${
+            cmd.name
+          }${cmd.usage ? " " + cmd.usage : ""}\` - ${cmd.description}`
+      );
+  
+      let Embed = new MessageEmbed()
+            .setAuthor(
+              `Commands of ${client.user.username}`,
+              client.botconfig.IconURL
+            )
+            .setColor(client.botconfig.EmbedColor)
+            .setFooter(
+              `To get info of each command type ${
+                GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix
+              }help [Command] | Have a nice day!`
+            ).setDescription(`${Commands.join("\n")}
+  
+  Discord Music Bot Version: v${require("../package.json").version}
+  [✨ Support Server](${
+    client.botconfig.SupportServer
+  }) | [GitHub](https://github.com/SudhanPlayz/Discord-MusicBot) | By [SudhanPlayz](https://github.com/SudhanPlayz)`);
+      if (!args) return interaction.send(Embed);
+      else {
+        let cmd =
+          client.commands.get(args[0].value) ||
+          client.commands.find((x) => x.aliases && x.aliases.includes(args[0].value));
+        if (!cmd)
+          return client.sendTime(interaction, `❌ | Unable to find that command.`);
+  
+        let embed = new MessageEmbed()
+          .setAuthor(`Command: ${cmd.name}`, client.botconfig.IconURL)
+          .setDescription(cmd.description)
+          .setColor("GREEN")
+          //.addField("Name", cmd.name, true)
+          .addField("Aliases", cmd.aliases.join(", "), true)
+          .addField(
+            "Usage",
+            `\`${GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix}${
+              cmd.name
+            }\`${cmd.usage ? " " + cmd.usage : ""}`,
+            true
+          )
+          .addField(
+            "Permissions",
+            "Member: " +
+              cmd.permissions.member.join(", ") +
+              "\nBot: " +
+              cmd.permissions.channel.join(", "),
+            true
+          )
+          .setFooter(
+            `Prefix - ${
+              GuildDB ? GuildDB.prefix : client.botconfig.DefaultPrefix
+            }`
+          );
+  
+        interaction.send(embed);
+      }
+  },
+}};

@@ -1,30 +1,50 @@
 const { MessageEmbed } = require("discord.js");
-const sendError = require("../util/error");
 
 module.exports = {
-  info: {
     name: "shuffle",
-    description: "Shuffle queue",
-    usage: "[shuffle]",
-    aliases: ["shuffle"],
-  },
+    description: "Shuffles the queue",
+    usage: "",
+    permissions: {
+        channel: ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"],
+        member: [],
+    },
+    aliases: ["shuff"],
+    /**
+     *
+     * @param {import("../structures/DiscordMusicBot")} client
+     * @param {import("discord.js").Message} message
+     * @param {string[]} args
+     * @param {*} param3
+     */
+    run: async (client, message, args, { GuildDB }) => {
+        let player = await client.Manager.get(message.guild.id);
+        if (!player) return client.sendTime(message.channel, "❌ | **Nothing is playing right now...**");
+        if (!message.member.voice.channel) return client.sendTime(message.channel, "❌ | **You must be in a voice channel to use this command!**");
+        if (message.guild.me.voice.channel && message.member.voice.channel.id !== message.guild.me.voice.channel.id) return client.sendTime(message.channel, ":x: | **You must be in the same voice channel as me to use this command!**");
+        if (!player.queue || !player.queue.length || player.queue.length === 0) return client.sendTime(message.channel, "❌ | **Not enough songs in the queue to shuffle!**");
+        player.queue.shuffle();
+        await client.sendTime(message.channel, "✅ | Shuffled the queue!");
+    },
+    SlashCommand: {
+        /**
+     *
+     * @param {import("../structures/DiscordMusicBot")} client
+     * @param {import("discord.js").Message} message
+     * @param {string[]} args
+     * @param {*} param3
+     */
+        run: async (client, interaction, args, { GuildDB }) => {
+            const guild = client.guilds.cache.get(interaction.guild_id);
+            const member = guild.members.cache.get(interaction.member.user.id);
 
-  run: async function (client, message, args) {
-    const serverQueue = message.client.queue.get(message.guild.id);
-    if (!serverQueue) return sendError("There is no queue.",message.channel).catch(console.error);
-try{
-    let songs = serverQueue.songs;
-    for (let i = songs.length - 1; i > 1; i--) {
-      let j = 1 + Math.floor(Math.random() * i);
-      [songs[i], songs[j]] = [songs[j], songs[i]];
-    }
-    serverQueue.songs = songs;
-    message.client.queue.set(message.guild.id, serverQueue);
-    message.react("✅")
-      } catch (error) {
-        message.guild.me.voice.channel.leave();
-        message.client.queue.delete(message.guild.id);
-        return sendError(`:notes: The player has stopped and the queue has been cleared.: \`${error}\``, message.channel);
-     }
-  },
+            if (!member.voice.channel) return client.sendTime(interaction, "❌ | **You must be in a voice channel to use this command.**");
+            if (guild.me.voice.channel && !guild.me.voice.channel.equals(member.voice.channel)) return client.sendTime(interaction, ":x: | **You must be in the same voice channel as me to use this command!**");
+
+            let player = await client.Manager.get(interaction.guild_id);
+            if (!player) return client.sendTime(interaction.channel, "❌ | **Nothing is playing right now...**");
+            if (!player.queue || !player.queue.length || player.queue.length === 0) return client.sendTime(interaction, "❌ | **Not enough songs in the queue to shuffle!**");
+            player.queue.shuffle();
+            client.sendTime(interaction, "✅ | Shuffled the queue!");
+        },
+    },
 };

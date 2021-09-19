@@ -1,16 +1,17 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
 
+name: Feature request
+about: Request a feature for the Music Bot
+title: ''
+labels: 'type: enhancement'
+assignees: ''
 ---
+<!-- Use Discord for questions: https://discord.gg/bRCvFy9 -->
 
 **Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+A clear and concise description of what the problem is. Eg. I'm always frustrated when [...]
 
-**Describe the solution you'd like**
+**Describe the ideal solution**
 A clear and concise description of what you want to happen.
 
 **Describe alternatives you've considered**

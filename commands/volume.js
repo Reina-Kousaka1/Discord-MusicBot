@@ -1,29 +1,68 @@
 const { MessageEmbed } = require("discord.js");
-const sendError = require("../util/error");
+const { TrackUtils } = require("erela.js");
 
 module.exports = {
-  info: {
     name: "volume",
-    description: "To change the server song queue volume",
-    usage: "[volume]",
-    aliases: ["v", "vol"],
-  },
+    description: "Check or change the current volume",
+    usage: "<volume>",
+    permissions: {
+        channel: ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"],
+        member: [],
+    },
+    aliases: ["vol", "v"],
+    /**
+     *
+     * @param {import("../structures/DiscordMusicBot")} client
+     * @param {import("discord.js").Message} message
+     * @param {string[]} args
+     * @param {*} param3
+     */
+    run: async (client, message, args, { GuildDB }) => {
+        let player = await client.Manager.get(message.guild.id);
+        if (!player) return client.sendTime(message.channel, "❌ | **Nothing is playing right now...**");
+        if (!args[0]) return client.sendTime(message.channel, `🔉 | Current volume \`${player.volume}\`.`);
+        if (!message.member.voice.channel) return client.sendTime(message.channel, "❌ | **You must be in a voice channel to use this command!**");
+        if (message.guild.me.voice.channel && message.member.voice.channel.id !== message.guild.me.voice.channel.id) return client.sendTime(message.channel, ":x: | **You must be in the same voice channel as me to use this command!**");
+        if (!parseInt(args[0])) return client.sendTime(message.channel, `**Please choose a number between** \`1 - 100\``);
+        let vol = parseInt(args[0]);
+        if(vol < 0 || vol > 100){
+          return  client.sendTime(message.channel, "❌ | **Please Choose A Number Between `1-100`**");
+        }
+        else{
+        player.setVolume(vol);
+        client.sendTime(message.channel, `🔉 | **Volume set to** \`${player.volume}\``);
+        }
+    },
+    SlashCommand: {
+        options: [
+            {
+                name: "amount",
+                value: "amount",
+                type: 4,
+                required: false,
+                description: "Enter a volume from 1-100. Default is 100.",
+            },
+        ],
+    /**
+     *
+     * @param {import("../structures/DiscordMusicBot")} client
+     * @param {import("discord.js").Message} message
+     * @param {string[]} args
+     * @param {*} param3
+     */
+        run: async (client, interaction, args, { GuildDB }) => {
+            const guild = client.guilds.cache.get(interaction.guild_id);
+            const member = guild.members.cache.get(interaction.member.user.id);
 
-  run: async function (client, message, args) {
-    const channel = message.member.voice.channel;
-    if (!channel)return sendError("I'm sorry but you need to be in a voice channel to play music!", message.channel);
-    const serverQueue = message.client.queue.get(message.guild.id);
-    if (!serverQueue) return sendError("There is nothing playing in this server.", message.channel);
-    if (!serverQueue.connection) return sendError("There is nothing playing in this server.", message.channel);
-    if (!args[0])return message.channel.send(`The current volume is: **${serverQueue.volume}**`);
-     if(isNaN(args[0])) return message.channel.send(':notes: Numbers only!').catch(err => console.log(err));
-    if(parseInt(args[0]) > 150 ||(args[0]) < 0) return sendError('You can\'t set the volume more than 150. or lower than 0',message.channel).catch(err => console.log(err));
-    serverQueue.volume = args[0]; 
-    serverQueue.connection.dispatcher.setVolumeLogarithmic(args[0] / 100);
-    let xd = new MessageEmbed()
-    .setDescription(`I set the volume to: **${args[0]/1}/100**`)
-    .setAuthor("Server Volume Manager", "https://raw.githubusercontent.com/SudhanPlayz/Discord-MusicBot/master/assets/Music.gif")
-    .setColor("BLUE")
-    return message.channel.send(xd);
-  },
+            if (!member.voice.channel) return client.sendTime(interaction, "❌ | You must be in a voice channel to use this command.");
+            if (guild.me.voice.channel && !guild.me.voice.channel.equals(member.voice.channel)) return client.sendTime(interaction, ":x: | **You must be in the same voice channel as me to use this command!**");
+            let player = await client.Manager.get(interaction.guild_id);
+            if (!player) return client.sendTime(interaction, "❌ | **Nothing is playing right now...**");
+            if (!args[0].value) return client.sendTime(interaction, `🔉 | Current volume \`${player.volume}\`.`);
+            let vol = parseInt(args[0].value);
+            if (!vol || vol < 1 || vol > 100) return client.sendTime(interaction, `**Please choose a number between** \`1 - 100\``);
+            player.setVolume(vol);
+            client.sendTime(interaction, `🔉 | Volume set to \`${player.volume}\``);
+        },
+    },
 };
